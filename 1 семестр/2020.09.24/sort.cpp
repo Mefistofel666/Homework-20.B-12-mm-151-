@@ -1,3 +1,4 @@
+// Написать функцию сортировки массива, использующую указательную арифметику вместо обращения по индексам.
 #include <iostream>
 using namespace std;
 
@@ -30,7 +31,7 @@ int main()
     for (; p != q; p++)
         cin >> *p;
     p = A;
-    sort(A,n);
+    sort(A, n);
     for (; p != q; p++)
     {
         cout << *p << " ";

@@ -1,3 +1,4 @@
+// Закончить и реализовать структуру Rational(с пары). В main привести примеры использования методов и функций.
 #include <iostream>
 #include <string>
 using namespace std;

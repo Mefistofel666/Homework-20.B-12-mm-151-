@@ -1,3 +1,4 @@
+// Написать функцию удаляющую из целочисленного массива все четные элементы. Гарантируется, что в массиве есть хотя бы один нечетный элемент. После исполнения такой функции массив должен уменьшить свой размер.
 #include <iostream>
 using namespace std;
 
@@ -17,14 +18,14 @@ int main()
         }
     }
     int *temp = new int[count];
-    for(int i = 0; i<count;i++){
+    for (int i = 0; i < count; i++)
+    {
         temp[i] = even[i];
         cout << temp[i] << " ";
     }
     delete even;
     delete a;
     even = temp;
-
 
     return 0;
 }
