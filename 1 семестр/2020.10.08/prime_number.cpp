@@ -5,9 +5,8 @@
 using namespace std;
 int main()
 {
-    int n;
+    int n, k = 2;
     cin >> n;
-    int k = 2;
     while (n)
     {
         n--;
