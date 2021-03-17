@@ -15,7 +15,7 @@ public:
         return os << "a = " << cls.a << ", b = " << cls.b << ", c = " << cls.c << ", d = " << cls.d;
     }
 };
-
+    
 class B
 {
 public:
@@ -31,6 +31,14 @@ int &get_a(A &x)
 {
     return ((B *)(&x))->a1 = -42;
 }
+double &get_b(A &x)
+{
+    return ((B *)(&x))->b1 = 0.5;
+}
+char &get_c(A &x)
+{
+    return ((B *)(&x))->c1 = 'A';
+}
 
 int main()
 {
@@ -40,9 +48,13 @@ int main()
     long long z = 10000;
     A example(x, y, t, z);
     int &ah = get_a(example);
+    double &bh = get_b(example);
+    char &ch = get_c(example);
 
     std::cout << ah << std::endl;
     ah = -5;
+    bh = 99.9;
+    ch = 'H';
 
     std::cout << example;
 
