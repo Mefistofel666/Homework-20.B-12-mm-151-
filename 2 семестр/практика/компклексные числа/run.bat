@@ -1,3 +1,4 @@
 make -f Makefile
 make clean
-myprog.exe
+g++ tester.cpp -o tester
+tester.exe
