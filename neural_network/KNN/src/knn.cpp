@@ -51,7 +51,7 @@ void knn::find_knearest(data *query_point)
         {
             for (int j = 0; j < training_data->size(); j++)
             {
-                double distance = calculate_distance(query_point, training_data->at(j));
+                double distance = training_data->at(j)->get_distance();
                 if (distance > previous_min && distance < min)
                 {
                     min = distance;
@@ -64,18 +64,7 @@ void knn::find_knearest(data *query_point)
         }
     }
 }
-void knn::set_training_data(std::vector<data *> *vec)
-{
-    training_data = vec;
-}
-void knn::set_test_data(std::vector<data *> *vec)
-{
-    test_data = vec;
-}
-void knn::set_validation_data(std::vector<data *> *vec)
-{
-    validation_data = vec;
-}
+
 void knn::set_k(int val)
 {
     k = val;
@@ -106,7 +95,7 @@ int knn::predict()
             best = kv.first;
         }
     }
-    delete neighbours;
+    neighbours->clear();
     return best;
 }
 double knn::calculate_distance(data *query_point, data *input)
@@ -121,15 +110,16 @@ double knn::calculate_distance(data *query_point, data *input)
 #ifdef EUCLID
     for (unsigned i = 0; i < query_point->get_feature_vector_size(); i++)
     {
-        distance = pow(query_point->get_feature_vector()->at(i) - input->get_feature_vector()->at(i), 2);
+        distance += pow(query_point->get_feature_vector()->at(i) - input->get_feature_vector()->at(i), 2);
     }
     distance = sqrt(distance);
+    return distance;
 
 #elif defined MANHATTAN
 // PUT MANHATTAN IMPLEMENTATION HERE
 #endif
 
-    return distance;
+    
 }
 double knn::validate_performance()
 {
@@ -140,6 +130,7 @@ double knn::validate_performance()
     {
         find_knearest(query_point);
         int prediction = predict();
+        printf("%d -> %d \n", prediction, query_point->get_label());
         if(prediction == query_point->get_label())
         {
             count++;
@@ -172,8 +163,8 @@ double knn::test_performance()
 int main()
 {
     data_handler *dh = new data_handler();
-    dh->read_feature_vector("train-images-idx3-ubyte");
-    dh->read_feature_labels("train-labels-idx1-ubyte");
+    dh->read_feature_vector("../train-images-idx3-ubyte");
+    dh->read_feature_labels("../train-labels-idx1-ubyte");
     dh->split_data();
     dh->count_classes();
     knn *knearest = new knn();

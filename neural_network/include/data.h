@@ -24,6 +24,7 @@ public:
     int get_feature_vector_size();
     uint8_t get_label();
     uint8_t get_enumerated_label();
+    double get_distance();
 
     std::vector<uint8_t> *get_feature_vector();
 };
