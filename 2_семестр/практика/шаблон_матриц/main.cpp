@@ -66,6 +66,35 @@ int main()
     E = C * F;
     std::cout << "Bad Product: \n" << E;
 
+
+    // Частичная специализация
+
+    Matrix<std::vector<int>> K(2, 2, 2) ;
+    std::cout << K.get_rows() << " " << K.get_cols() << " " << K.get_high() << "\n";
+    std::cout << K;
+    // не работает :(
+    // Matrix<std::vector<int>> N(2,2,2);
+    // for(unsigned i = 0; i < 2; i++)
+    // {
+    //     for(unsigned j = 0; j < 2 ; j++)
+    //     {
+    //         for(unsigned k = 0; k < 2; k++)
+    //         {
+    //             N(i,j,k) = 3;
+    //         }
+    //     }
+    // }
+    // for(int i = 0; i < 2; i++)
+    // {
+    //     for(int j = 0; j < 2;j++)
+    //     {
+    //         for(int k = 0; k < 2; k++)
+    //         {
+    //             K(i,j,k) = 5;
+    //         }
+    //     }
+    // }
+    // std::cout << K + M; 
    
     return 0;
 }
