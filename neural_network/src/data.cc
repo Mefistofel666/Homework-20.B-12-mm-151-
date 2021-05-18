@@ -1,57 +1,113 @@
 #include "data.h"
 
 
-data::data()
-{
-    feature_vector = new std::vector<uint_fast8_t>;
-}
-data::~data()
-{
+// data::data()
+// {
+//     feature_vector = new std::vector<uint_fast8_t>;
+// }
+// data::~data()
+// {
     
-}
+// }
 
-void data::set_distance(double val)
+void Data::setDistance(double val)
 {
     distance = val;
 }
 
+void Data::setFeatureVector(std::vector<uint8_t> *vec)
+{
+    featureVector = vec;
+}
 
-void data::set_feature_vector(std::vector<uint8_t> *vec)
+void Data::setNormalizedFeatureVector(std::vector<double>* vec)
 {
-    feature_vector = vec;
+  normalizedFeatureVector = vec;
 }
-void data::append_to_feature_vector(uint8_t val)
+
+void Data::appendToFeatureVector(uint8_t val)
 {
-    feature_vector->push_back(val);
+    featureVector->push_back(val);
 }
-void data::set_label(uint8_t val)
+
+void Data::appendToFeatureVector(double val)
+{
+    normalizedFeatureVector->push_back(val);
+}
+
+void Data::setLabel(uint8_t val)
 {
     label = val;
 }
-void data::set_enumerated_label(int val)
+
+void Data::setEnumeratedLabel(uint8_t val)
 {
-    enum_label = val;
+    enumeratedLabel = val;
 }
 
-int data::get_feature_vector_size()
+void Data::setClassVector(int classCounts)
 {
-    feature_vector->size();
-}
-uint8_t data::get_label()
-{
-    return label;
-}
-uint8_t data::get_enumerated_label()
-{
-    return enum_label;
+    classVector = new std::vector<int>();
+    for(int i = 0; i < classCounts; i++)
+    {
+        if(i == label) classVector->push_back(1);
+        else classVector->push_back(0);
+    }
 }
 
-std::vector<uint8_t> *data::get_feature_vector()
+void Data::printVector()
 {
-    return feature_vector;
+    printf("[ ");
+    for(uint8_t val : *featureVector)
+    {
+        printf("%u ", val);
+    }
+    printf("]\n");
 }
 
-double data::get_distance()
+void Data::printNormalizedVector()
+{
+  printf("[ ");
+  for(auto val : *normalizedFeatureVector)
+  {
+    printf("%.2f ", val);
+  }
+  printf("]\n");
+  
+}
+
+double Data::getDistance()
 {
     return distance;
 }
+
+int Data::getFeatureVectorSize()
+{
+    featureVector->size();
+}
+
+uint8_t Data::getLabel()
+{
+    return label;
+}
+
+uint8_t Data::getEnumeratedLabel()
+{
+    return enumeratedLabel;
+}
+
+std::vector<uint8_t> *Data::getFeatureVector()
+{
+    return featureVector;
+}
+
+std::vector<int>  Data::getClassVector()
+{
+  return *classVector;
+}
+
+std::vector<double> * Data::getNormalizedFeatureVector()
+{
+  return normalizedFeatureVector;
+}
+

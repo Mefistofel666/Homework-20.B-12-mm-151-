@@ -4,18 +4,16 @@
 #include <vector>
 #include "data.h"
 
-class common_data
+class CommonData
 {
 protected:
-    std::vector<data *> *training_data;
-    std::vector<data *> *test_data;
-    std::vector<data *> *validation_data;
+    std::vector<Data *> *trainingData;
+    std::vector<Data *> *testData;
+    std::vector<Data *> *validationData;
 public:
-    void set_training_data(std::vector<data *> *vec);
-    void set_test_data(std::vector<data *> *vec);
-    void set_validation_data(std::vector<data *> *vec);
-
-
+    void setTrainingData(std::vector<Data *> *vec);
+    void setTestData(std::vector<Data *> *vec);
+    void setValidationData(std::vector<Data *> *vec);
 };
 
 #endif

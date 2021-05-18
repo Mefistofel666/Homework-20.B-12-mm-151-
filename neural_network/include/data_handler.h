@@ -1,5 +1,5 @@
-#ifndef DATA_H
-#define DATA_H
+#ifndef DATA_HANDLER_H
+#define DATA_HANDLER_H
 
 #include <fstream>
 #include "stdint.h"
@@ -8,40 +8,51 @@
 #include <string>
 #include <map>
 #include <unordered_set>
+#include <math.h>
 
-class data_handler
+class DataHandler
 {
 
-    std::vector<data *> *data_array; // all of the data(pre-split)
-    std::vector<data *> *training_data;
-    std::vector<data *> *test_data;
-    std::vector<data *> *validation_data;
+    std::vector<Data *> * dataArray; // all of the data(pre-split)
+    std::vector<Data *> * trainingData;
+    std::vector<Data *> * testData;
+    std::vector<Data *> * validationData;
 
-    int num_classes;
-
-    int feature_vector_size;
-    std::map<uint8_t, int> class_map;
-
-    const double TRAIN_SET_PERCENT = 0.75;
-    const double TEST_SET_PERCENT = 0.20;
-    const double VALIDATATION_PERCENT = 0.05;
+    int classCounts;
+    int featureVectorSize;
+    std::map<uint8_t, int> classFromInt;
+    std::map<std::string, int> classFromString; 
 
 public:
-    data_handler();
-    ~data_handler();
+    const double TRAIN_SET_PERCENT = 0.1;
+    const double TEST_SET_PERCENT = 0.075;
+    const double VALIDATATION_PERCENT = 0.005;
 
-    void read_feature_vector(std::string path);
-    void read_feature_labels(std::string path);
-    void split_data();
-    void count_classes();
+    DataHandler();
+    ~DataHandler();
 
-    uint32_t convert_to_little_endian(const unsigned char *bytes);
+    void readCsv(std::string,std::string);
+    void readInputData(std::string path);
+    void readLabelData(std::string path);
 
-    int get_classes_counts();
-    std::vector<data *> *get_training_data();
-    std::vector<data *> *get_test_data();
+    void splitData();
+    void countClasses();
+    void normalize();
+    void print();
 
-    std::vector<data *> *get_validation_data();
+    int getClassCounts();
+    int getDataArraySize();
+    int getTrainingDataSize();
+    int getTestDataSize();
+    int getValidationSize();
+
+    uint32_t format(const unsigned char *bytes); // convert to little endian
+
+    std::vector<Data *> *getTrainingData();
+    std::vector<Data *> *getTestData();
+    std::vector<Data *> *getValidationData();
+    std::map<uint8_t, int> getClassMap();
+
 };
 
 #endif

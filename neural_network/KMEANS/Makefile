@@ -7,6 +7,7 @@ all:main
 
 main: $(SRC)/kmeans.cc
 	$(CC) $(CFLAGS) $(SRC)/kmeans.cc -o main -L$(MNIST_ML_ROOT)/lib/ -I$(INCLUDE_DIR) -I$(MNIST_ML_ROOT)/include -ldata
+	rm kmeans.o
 
 clean:
 	rm main

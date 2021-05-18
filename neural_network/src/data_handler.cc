@@ -1,44 +1,116 @@
 #include "data_handler.h"
 #include <random>
 #include <algorithm>
+#include <iostream>
 
-data_handler::data_handler()
+DataHandler::DataHandler()
 {
-    data_array = new std::vector<data *>;
-    training_data = new std::vector<data *>;
-    test_data = new std::vector<data *>;
-    validation_data = new std::vector<data *>;
+    dataArray = new std::vector<Data *>;
+    trainingData = new std::vector<Data *>;
+    testData = new std::vector<Data *>;
+    validationData = new std::vector<Data *>;
 }
-data_handler::~data_handler()
+DataHandler::~DataHandler()
 {
-    // fix me
+    // fix me!!!
 }
 
-void data_handler::read_feature_vector(std::string path)
+void DataHandler::readCsv(std::string path, std::string delimiter)
 {
-    uint32_t header[4]; // |Magic|Num Images|Row size|Column size
+    classCounts = 0;    
+    std::ifstream data_file;
+    data_file.open(path.c_str());
+    std::string line;
+
+    while(std::getline(data_file, line))
+    {
+        if(line.length() == 0) continue;
+        Data *d = new Data();
+        d->setNormalizedFeatureVector(new std::vector<double>());
+        size_t position = 0;
+        std::string token;
+        while((position = line.find(delimiter))!= std::string::npos)
+        {
+            token = line.substr(0, position);
+            d->appendToFeatureVector(std::stod(token));
+            line.erase(0, position + delimiter.length());
+        }
+
+        if(classFromString.find(line) != classFromString.end())
+        {
+            d->setLabel(classFromString[line]);
+        }else
+        {
+            classFromString[line] = classCounts;
+            d->setLabel(classFromString[token]);
+            classCounts++;
+        }
+        dataArray->push_back(d);
+        for(Data *data : *dataArray) data->setClassVector(classCounts);
+        featureVectorSize = dataArray->at(0)->getNormalizedFeatureVector()->size();
+    }
+}
+
+void DataHandler::readInputData(std::string path)
+{
+    uint32_t magic = 0;
+    uint32_t num_images = 0;
+    uint32_t num_rows = 0;
+    uint32_t num_cols = 0;
+    // uint32_t header[4]; // |Magic|Num Images|Row size|Column size
     unsigned char bytes[4];
     FILE *f = fopen(path.c_str(), "rb");
     if (f)
     {
-        for (int i = 0; i < 4; i++)
+        int i = 0;
+        while(i < 4)
         {
-            if (fread(bytes, sizeof(bytes), 1, f))
+            if(fread(bytes,sizeof(bytes), 1,f))
             {
-                header[i] = convert_to_little_endian(bytes);
+                switch(i)
+                {
+                    case 0:
+                        magic = format(bytes);
+                        i++;
+                        break;
+                    case 1:
+                        num_images = format(bytes);
+                        i++;
+                        break;
+                    case 2:
+                        num_rows = format(bytes);
+                        i++;
+                        break;
+                    case 3:
+                        num_cols = format(bytes);
+                        i++;
+                        break;
+                }
             }
         }
-        printf("Done getting Input File Header.\n");
-        int image_size = header[2] * header[3];
-        for (int i = 0; i < header[1]; i++)
+        // for (int i = 0; i < 4; i++)
+        // {
+        //     if (fread(bytes, sizeof(bytes), 1, f))
+        //     {
+        //         header[i] = format(bytes);
+        //     }
+        // }
+        // num_images = header[1];
+        // num_rows = header[2];
+        // num_cols = header[3];
+
+        printf("Done getting file header.\n");
+        uint32_t image_size = num_rows * num_cols;
+        for (int i = 0; i < num_images; i++)
         {
-            data *d = new data();
+            Data *d = new Data();
+            d->setFeatureVector(new std::vector<uint8_t>());
             uint8_t element[1];
             for (int j = 0; j < image_size; j++)
             {
                 if (fread(element, sizeof(element), 1, f))
                 {
-                    d->append_to_feature_vector(element[0]);
+                    d->appendToFeatureVector(element[0]);   
 
                 }
                 else
@@ -47,10 +119,13 @@ void data_handler::read_feature_vector(std::string path)
                     exit(1);
                 }
             }
-            data_array->push_back(d);
+            dataArray->push_back(d);
+            dataArray->back()->setClassVector(classCounts);
         }
-
-        printf("Succesfully read and stored %lu feature vectors.\n", data_array->size());
+        normalize();
+        featureVectorSize = dataArray->at(0)->getFeatureVector()->size();
+        printf("Succesfully read and stored %lu data entries.\n", dataArray->size());
+        printf("The Feature Vector Size is: %d\n", featureVectorSize);
     }
     else
     {
@@ -58,29 +133,53 @@ void data_handler::read_feature_vector(std::string path)
         exit(1);
     }
 }
-void data_handler::read_feature_labels(std::string path)
+void DataHandler::readLabelData(std::string path)
 {
-    uint32_t header[2]; // |Magic|Num Images|
+    uint32_t magic = 0;
+    uint32_t num_images = 0;
+    // uint32_t header[2]; // |Magic|Num Images|
     unsigned char bytes[4];
     FILE *f = fopen(path.c_str(), "rb");
     if (f)
     {
-
-        for (int i = 0; i < 2; i++)
+        int i = 0;
+        while(i < 2)
         {
-            if (fread(bytes, sizeof(bytes), 1, f))
+            if(fread(bytes, sizeof(bytes), 1,f))
             {
-                header[i] = convert_to_little_endian(bytes);
+                switch (i)
+                {
+                case 0:
+                    magic = format(bytes);
+                    i++;
+                    break;
+                
+                case 1:
+                    num_images = format(bytes);
+                    i++;
+                    break;
+                }
             }
         }
-        printf("Done getting Label File Header.\n");
-        for (int i = 0; i < header[1]; i++)
+
+
+        // for (int i = 0; i < 2; i++)
+        // {
+        //     if (fread(bytes, sizeof(bytes), 1, f))
+        //     {
+        //         header[i] = format(bytes);
+        //     }
+        // }
+        // num_images = header[1];
+
+
+        for (unsigned j = 0; j < num_images; j++)
         {
             uint8_t element[1];
 
             if (fread(element, sizeof(element), 1, f))
             {
-                data_array->at(i)->set_label(element[0]);
+                dataArray->at(j)->setLabel(element[0]);
 
             }
             else
@@ -89,8 +188,7 @@ void data_handler::read_feature_labels(std::string path)
                 exit(1);
             }
         }
-
-        printf("Succesfully read and stored label.\n", data_array->size());
+        printf("Done getting Label File Header.\n");
     }
     else
     {
@@ -98,72 +196,89 @@ void data_handler::read_feature_labels(std::string path)
         exit(1);
     }
 }
-void data_handler::split_data()
+void DataHandler::splitData()
 {
     std::unordered_set<int> used_indexes;
-    int train_size = data_array->size() * TRAIN_SET_PERCENT;
-    int test_size = data_array->size() * TEST_SET_PERCENT;
-    int valid_size = data_array->size() * VALIDATATION_PERCENT;
+    int train_size = dataArray->size() * TRAIN_SET_PERCENT;
+    int test_size = dataArray->size() * TEST_SET_PERCENT;
+    int valid_size = dataArray->size() * VALIDATATION_PERCENT;
+
+    std::random_shuffle(dataArray->begin(), dataArray->end());
 
     // Training data
     int count = 0;
+    int index = 0;
     while (count < train_size)
     {
-        int rand_index = (rand() + rand()) % data_array->size(); // [0; data_array->size()-1]
-        if (used_indexes.find(rand_index) == used_indexes.end())
-        {
-            training_data->push_back(data_array->at(rand_index));
-            used_indexes.insert(rand_index);
-            count++;
-        }
+        // int rand_index = (rand() + rand()) % dataArray->size(); // [0; data_array->size()-1]
+        // if (used_indexes.find(rand_index) == used_indexes.end())
+        // {
+        //     trainingData->push_back(dataArray->at(rand_index));
+        //     used_indexes.insert(rand_index);
+        //     count++;
+        // }
+        trainingData->push_back(dataArray->at(index++));
+        count++;
     }
 
     // Test Data
     count = 0;
     while (count < test_size)
     {
-        int rand_index = (rand() + rand()) % data_array->size(); // [0; data_array->size()-1]
-        if (used_indexes.find(rand_index) == used_indexes.end())
-        {
-            test_data->push_back(data_array->at(rand_index));
-            used_indexes.insert(rand_index);
-            count++;
-        }
+        // int rand_index = (rand() + rand()) % data_array->size(); // [0; data_array->size()-1]
+        // if (used_indexes.find(rand_index) == used_indexes.end())
+        // {
+        //     test_data->push_back(data_array->at(rand_index));
+        //     used_indexes.insert(rand_index);
+        //     count++;
+        // }
+        testData->push_back(dataArray->at(index++));
+        count++;
     }
 
     // Validation Data
     count = 0;
     while (count < valid_size)
     {
-        int rand_index = (rand() + rand()) % data_array->size(); // [0; data_array->size()-1]
-        if (used_indexes.find(rand_index) == used_indexes.end())
-        {
-            validation_data->push_back(data_array->at(rand_index));
-            used_indexes.insert(rand_index);
-            count++;
-        }
+        // int rand_index = (rand() + rand()) % data_array->size(); // [0; data_array->size()-1]
+        // if (used_indexes.find(rand_index) == used_indexes.end())
+        // {
+        //     validation_data->push_back(data_array->at(rand_index));
+        //     used_indexes.insert(rand_index);
+        //     count++;
+        // }
+        validationData->push_back(dataArray->at(index++));
+        count++;
     }
-    printf("Training Data Size: %lu.\n", training_data->size());
-    printf("Test Data Size: %lu.\n", test_data->size());
-    printf("Validation Data Size: %lu.\n", validation_data->size());
+    printf("Training Data Size: %lu.\n", trainingData->size());
+    printf("Test Data Size: %lu.\n", testData->size());
+    printf("Validation Data Size: %lu.\n", validationData->size());
 }
-void data_handler::count_classes()
+void DataHandler::countClasses()
 {
     int count = 0;
-    for (unsigned i = 0; i < data_array->size(); i++)
+    for (unsigned i = 0; i < dataArray->size(); i++)
     {
-        if (class_map.find(data_array->at(i)->get_label()) == class_map.end())
+        if (classFromInt.find(dataArray->at(i)->getLabel()) == classFromInt.end())
         {
-            class_map[data_array->at(i)->get_label()] = count;
-            data_array->at(i)->set_enumerated_label(count);
+            classFromInt[dataArray->at(i)->getLabel()] = count;
+            dataArray->at(i)->setEnumeratedLabel(count);
             count++;
         }
+        // else
+        // {
+        //     dataArray->at(i)->setEnumeratedLabel(classFromInt[dataArray->at(i)->getLabel()]);
+        // }
     }
-    num_classes = count;
-    printf("Succesfully Extracted %d Unique Classes.\n", num_classes);
+    classCounts = count;
+    for(Data *data : *dataArray)  
+    {
+        data->setClassVector(classCounts);
+    }
+    printf("Succesfully Extracted %d Unique Classes.\n", classCounts);
 }
 
-uint32_t data_handler::convert_to_little_endian(const unsigned char *bytes)
+uint32_t DataHandler::format(const unsigned char *bytes)
 {
     return (uint32_t)((bytes[0] << 24) |
                       bytes[1] << 16 |
@@ -172,24 +287,116 @@ uint32_t data_handler::convert_to_little_endian(const unsigned char *bytes)
 }
 
 
-int data_handler::get_classes_counts()
+void DataHandler::normalize()
 {
-    return num_classes;
+    std::vector<double> mins, maxs;
+
+    Data *d = dataArray->at(0);
+    for(auto val : *d->getFeatureVector())
+    {
+        mins.push_back(val);
+        maxs.push_back(val);
+    }
+    for(int i = 1; i < dataArray->size(); i++)
+    {
+        d = dataArray->at(i);
+        for(int j = 0; j < d->getFeatureVectorSize(); j++)
+        {
+            double value = (double)d->getFeatureVector()->at(j);
+            if(value < mins.at(j)) mins[j] = value;
+            if(value > maxs.at(j)) maxs[j] = value;
+        }
+    }
+
+    for(int i = 0; i < dataArray->size(); i++)
+    {
+        dataArray->at(i)->setNormalizedFeatureVector(new std::vector<double>());
+        dataArray->at(i)->setClassVector(classCounts);
+        for(int j = 0; j < dataArray->at(i)->getFeatureVectorSize(); j++)
+        {
+            if(maxs[j] - mins[j] == 0) dataArray->at(i)->appendToFeatureVector(0.0);
+            else
+            {
+                dataArray->at(i)->appendToFeatureVector((double)(dataArray->at(i)->getFeatureVector()->at(j) - mins[j])/(maxs[j]-mins[j]));
+            }
+        } 
+
+    }
+}
+
+int DataHandler::getDataArraySize()
+{
+    return dataArray->size();
+}
+int DataHandler::getTrainingDataSize()
+{
+    return trainingData->size();
+}
+int DataHandler::getTestDataSize()
+{
+    return testData->size();
+}
+int DataHandler::getValidationSize()
+{
+    return validationData->size();
+}
+
+int DataHandler::getClassCounts()
+{
+    return classCounts;
 }
 
 
-std::vector<data *> *data_handler::get_training_data()
+std::vector<Data *> *DataHandler::getTrainingData()
 {
-    return training_data;
+    return trainingData;
 }
-std::vector<data *> *data_handler::get_test_data()
+std::vector<Data *> *DataHandler::getTestData()
 {
-    return test_data;
+    return testData;
 }
 
-std::vector<data *> *data_handler::get_validation_data()
+std::vector<Data *> *DataHandler::getValidationData()
 {
-    return validation_data;
+    return validationData;
+}
+std::map<uint8_t, int> DataHandler::getClassMap()
+{
+    return classFromInt;
+}
+
+void DataHandler::print()
+{
+    printf("Training Data:\n");
+    for(auto data :*trainingData)
+    {
+        for(auto value : *data->getNormalizedFeatureVector())
+        {
+            printf(".3f, ", value);
+        }
+        printf(" -> %d", data->getLabel());
+    }
+    return;
+
+    printf("Test Data:\n");
+    for(auto data : *testData)
+    {
+        for(auto value : *data->getNormalizedFeatureVector())
+        {
+            printf("%.3f, ", value);
+        }
+        printf(" ->   %d\n", data->getLabel());
+    }
+
+    printf("Validation Data:\n");
+    for(auto data : *validationData)
+    {
+        for(auto value : *data->getNormalizedFeatureVector())
+        {
+            printf("%.3f, ", value);
+        }
+        printf(" ->   %d\n", data->getLabel());
+    }
 }
 
 // int main()

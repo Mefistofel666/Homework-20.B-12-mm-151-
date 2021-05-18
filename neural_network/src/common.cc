@@ -1,14 +1,14 @@
 #include "common.h"
 
-void common_data::set_training_data(std::vector<data *> *vec)
+void CommonData::setTrainingData(std::vector<Data *> *vec)
 {
-    training_data = vec;
+    trainingData = vec;
 }
-void common_data::set_test_data(std::vector<data *> *vec)
+void CommonData::setTestData(std::vector<Data *> *vec)
 {
-    test_data = vec;
+    testData = vec;
 }
-void common_data::set_validation_data(std::vector<data *> *vec)
+void CommonData::setValidationData(std::vector<Data *> *vec)
 {
-    validation_data = vec;
+    validationData = vec;
 }

@@ -1,31 +1,44 @@
-#ifndef DATA
-#define DATA
+#ifndef DATA_H
+#define DATA_H
 
 #include <vector>
-#include <stdint.h>
+#include <stdint.h> // iunt_8t
 #include <stdio.h>
 
-class data
+class Data
 {
-    std::vector<uint8_t> *feature_vector; // no class
+    std::vector<uint8_t> *featureVector; // no class
+    std::vector<double> *normalizedFeatureVector;
+    std::vector<int> *classVector;
     uint8_t label;
-    int enum_label;
+    uint8_t enumeratedLabel;
     double distance;
 
 public:
-    data();
-    ~data();
-    void set_feature_vector(std::vector<uint8_t> *);
-    void append_to_feature_vector(uint8_t);
-    void set_label(uint8_t);
-    void set_enumerated_label(int);
-    void set_distance(double val);
+    // Data();
+    // ~Data();
 
-    int get_feature_vector_size();
-    uint8_t get_label();
-    uint8_t get_enumerated_label();
-    double get_distance();
+    void appendToFeatureVector(uint8_t);
+    void appendToFeatureVector(double);
 
-    std::vector<uint8_t> *get_feature_vector();
+    void printVector();
+    void printNormalizedVector();
+
+    void setFeatureVector(std::vector<uint8_t> *);
+    void setNormalizedFeatureVector(std::vector<double> *);
+    void setClassVector(int counts);
+    void setLabel(uint8_t);
+    void setEnumeratedLabel(uint8_t);
+    void setDistance(double val);
+
+    int getFeatureVectorSize();
+    double getDistance();
+    uint8_t getLabel();
+    uint8_t getEnumeratedLabel();
+    std::vector<uint8_t> * getFeatureVector();
+    std::vector<double> * getNormalizedFeatureVector();
+    std::vector<int> getClassVector();
+
 };
+
 #endif

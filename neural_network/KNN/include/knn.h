@@ -3,25 +3,26 @@
 
 #include "common.h"
 
-class knn:public common_data
+class KNN:public CommonData
 {
     int k;
-    std::vector<data *> *neighbours;
+    std::vector<Data *> *neighbours;
 
 
 public:
-    knn(int);
-    knn();
-    ~knn();
+    KNN(int);
+    KNN();
+    ~KNN();
 
-    void find_knearest(data *query_point);
-    
-    void set_k(int val);
+    void findKnearest(Data *queryPoint);
+    void setK(int val);
+    int findMostFrequentClass();
+
 
     int predict();
-    double calculate_distance(data *query_point, data *input);
-    double validate_performance();
-    double test_performance();
+    double calculateDistance(Data *queryPoint, Data *input);
+    double validatePerformance();
+    double testPerformance();
 };
 
 #endif
