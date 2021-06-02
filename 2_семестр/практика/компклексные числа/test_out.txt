@@ -1,3 +1,3 @@
-Real = -18, Im = 12
- Real = 108, Im = 44
- 53 65
+Real = 1, Im = 0
+ Real = 1, Im = 0
+ 1 1e-49

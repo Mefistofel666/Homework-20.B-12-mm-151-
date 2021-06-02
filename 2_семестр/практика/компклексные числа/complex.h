@@ -1,9 +1,10 @@
 #include <iostream>
+
 // интерфейс класса Complex
 class Complex
 {
 public:
-    Complex(double x, double y) : real(x), im(y){};
+    Complex(double x = 0, double y = 0):real(x), im(y){}
     friend Complex operator+(Complex &x, Complex &y);
     friend Complex operator-(Complex &x, Complex &y);
     friend Complex operator*(Complex &x, Complex &y);

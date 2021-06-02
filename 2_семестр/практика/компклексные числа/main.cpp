@@ -17,10 +17,10 @@ int main()
     Complex b(x2, y2);
     Complex c = a - b;
     Complex d = a + b;
+    Complex f = a / b;
     
     double mod_a = a.module();
     double mod_b = b.module();
-
 
 
     std::ofstream out;
@@ -29,6 +29,7 @@ int main()
     if(out.is_open()){
         out << c << " " << d << " " << mod_a << " "<< mod_b;
     }
+    std::cout << f;
 
 
     // std::cout << "Sum of two complex numbers: " << d << "Difference of two complex numbers: " << c;

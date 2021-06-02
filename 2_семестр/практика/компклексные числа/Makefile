@@ -5,4 +5,4 @@ complex.o: complex.cpp complex.h
 main.o: main.cpp 
 	g++ -c main.cpp
 clean:
-	del *.o
+	rm -r *.o

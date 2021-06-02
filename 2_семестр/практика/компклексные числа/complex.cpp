@@ -33,9 +33,17 @@ double Complex::module()
 
 Complex operator/(Complex &x, Complex &y)
 {
-    Complex tmpy = y.conjugate();
-    Complex tmp = x * tmpy;
-    tmp.real = tmp.real / y.module();
-    tmp.im = tmp.im / y.module();
-    return Complex(tmp.real, tmp.im);
+    try{
+        if(y.real == 0.0 && y.im == 0.0) throw "Division by zero.\n";
+        Complex tmpy = y.conjugate();
+        Complex tmp = x * tmpy;
+        tmp.real = tmp.real / y.module();
+        tmp.im = tmp.im / y.module();
+        return Complex(tmp.real, tmp.im);
+    }
+    catch(const char *exception)
+    {
+        std::cout << "Error: " << exception;
+        return Complex(0,0);
+    }
 }
