@@ -1,14 +1,15 @@
 #include "data.h"
 
 
-// data::data()
-// {
-//     feature_vector = new std::vector<uint_fast8_t>;
-// }
-// data::~data()
-// {
-    
-// }
+void Data::appendToFeatureVector(uint8_t val)
+{
+    featureVector->push_back(val);
+}
+
+void Data::appendToFeatureVector(double val)
+{
+    normalizedFeatureVector->push_back(val);
+}
 
 void Data::setDistance(double val)
 {
@@ -25,26 +26,22 @@ void Data::setNormalizedFeatureVector(std::vector<double>* vec)
   normalizedFeatureVector = vec;
 }
 
-void Data::appendToFeatureVector(uint8_t val)
-{
-    featureVector->push_back(val);
-}
-
-void Data::appendToFeatureVector(double val)
-{
-    normalizedFeatureVector->push_back(val);
-}
-
 void Data::setLabel(uint8_t val)
 {
     label = val;
 }
-
-void Data::setEnumeratedLabel(uint8_t val)
+// скорее всего это надо убрать, просто тестил что-то
+void Data::setLabel(int val)
 {
-    enumeratedLabel = val;
+    label = val;
 }
+// в топку
+// void Data::setEnumeratedLabel(uint8_t val)
+// {
+//     enumeratedLabel = val;
+// }
 
+// (0,0,0,0,...,1,0,0,...,0) 1 стоит на i = label месте
 void Data::setClassVector(int classCounts)
 {
     classVector = new std::vector<int>();
@@ -91,10 +88,10 @@ uint8_t Data::getLabel()
     return label;
 }
 
-uint8_t Data::getEnumeratedLabel()
-{
-    return enumeratedLabel;
-}
+// uint8_t Data::getEnumeratedLabel()
+// {
+//     return enumeratedLabel;
+// }
 
 std::vector<uint8_t> *Data::getFeatureVector()
 {

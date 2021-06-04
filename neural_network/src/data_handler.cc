@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <iostream>
 
+// конструктор
+// определяем основные поля для работы с данными
 DataHandler::DataHandler()
 {
     dataArray = new std::vector<Data *>;
@@ -10,62 +12,68 @@ DataHandler::DataHandler()
     testData = new std::vector<Data *>;
     validationData = new std::vector<Data *>;
 }
+
+// Да.
 DataHandler::~DataHandler()
 {
     // fix me!!!
 }
 
+// Чтение данных в CSV формате, то есть данные записаны через ", " / "," / любой другой разделитель
 void DataHandler::readCsv(std::string path, std::string delimiter)
 {
-    classCounts = 0;    
+    classCounts = 0;   
     std::ifstream data_file;
     data_file.open(path.c_str());
     std::string line;
 
-    while(std::getline(data_file, line))
+    while(std::getline(data_file, line)) // построчно считываем данные 
     {
         if(line.length() == 0) continue;
         Data *d = new Data();
         d->setNormalizedFeatureVector(new std::vector<double>());
         size_t position = 0;
         std::string token;
-        while((position = line.find(delimiter))!= std::string::npos)
+        while((position = line.find(delimiter)) != std::string::npos) // пока разделитель найден
         {
             token = line.substr(0, position);
             d->appendToFeatureVector(std::stod(token));
             line.erase(0, position + delimiter.length());
         }
-
-        if(classFromString.find(line) != classFromString.end())
+        if(classFromString.find(line) != classFromString.end()) // класс не уникален, т.е. уже содержится в classFromString
         {
-            d->setLabel(classFromString[line]);
-        }else
+            d->setLabel((uint8_t)classFromString[line]);
+        }else // найден новый уникальный класс
         {
             classFromString[line] = classCounts;
-            d->setLabel(classFromString[token]);
+            std:: cout << "line: " << line << " , class:" << classCounts << "\n"; // присваиваем этому новому классу идущий по порядку номер
+            d->setLabel((uint8_t)classFromString[line]);
             classCounts++;
         }
         dataArray->push_back(d);
-        for(Data *data : *dataArray) data->setClassVector(classCounts);
-        featureVectorSize = dataArray->at(0)->getNormalizedFeatureVector()->size();
     }
+    for(Data *data : *dataArray)
+        data->setClassVector(classCounts);
+    featureVectorSize = dataArray->at(0)->getNormalizedFeatureVector()->size();
 }
 
+// Чтение данных MNIST
 void DataHandler::readInputData(std::string path)
 {
     uint32_t magic = 0;
-    uint32_t num_images = 0;
-    uint32_t num_rows = 0;
-    uint32_t num_cols = 0;
-    // uint32_t header[4]; // |Magic|Num Images|Row size|Column size
-    unsigned char bytes[4];
+    uint32_t num_images = 0; // кол-во изображений
+    uint32_t num_rows = 0; // количество строк
+    uint32_t num_cols = 0; // кол-во колонок
+    unsigned char bytes[4]; // параметры описанные выше по 32 бита
     FILE *f = fopen(path.c_str(), "rb");
     if (f)
     {
+        // считываем информацию о данных
         int i = 0;
         while(i < 4)
         {
-            if(fread(bytes,sizeof(bytes), 1,f))
+            // из потока f в переменную bytes считываем 1 штуку размера 4 байт = 32 бита
+            if(fread(bytes,sizeof(bytes), 1,f)) 
             {
                 switch(i)
                 {
@@ -88,26 +96,18 @@ void DataHandler::readInputData(std::string path)
                 }
             }
         }
-        // for (int i = 0; i < 4; i++)
-        // {
-        //     if (fread(bytes, sizeof(bytes), 1, f))
-        //     {
-        //         header[i] = format(bytes);
-        //     }
-        // }
-        // num_images = header[1];
-        // num_rows = header[2];
-        // num_cols = header[3];
-
         printf("Done getting file header.\n");
-        uint32_t image_size = num_rows * num_cols;
+
+        uint32_t image_size = num_rows * num_cols; // логично. Тут 24 * 24 = 784
+        // каждая фотка это экземпляр класса Data 
         for (int i = 0; i < num_images; i++)
         {
             Data *d = new Data();
             d->setFeatureVector(new std::vector<uint8_t>());
-            uint8_t element[1];
+            uint8_t element[1]; // один пиксель = 8 бит =  1 байт
             for (int j = 0; j < image_size; j++)
             {
+                // в element из потока f считываем 1 байт
                 if (fread(element, sizeof(element), 1, f))
                 {
                     d->appendToFeatureVector(element[0]);   
@@ -135,9 +135,9 @@ void DataHandler::readInputData(std::string path)
 }
 void DataHandler::readLabelData(std::string path)
 {
+    // почти тоже самое что и для входных данных
     uint32_t magic = 0;
     uint32_t num_images = 0;
-    // uint32_t header[2]; // |Magic|Num Images|
     unsigned char bytes[4];
     FILE *f = fopen(path.c_str(), "rb");
     if (f)
@@ -161,25 +161,12 @@ void DataHandler::readLabelData(std::string path)
                 }
             }
         }
-
-
-        // for (int i = 0; i < 2; i++)
-        // {
-        //     if (fread(bytes, sizeof(bytes), 1, f))
-        //     {
-        //         header[i] = format(bytes);
-        //     }
-        // }
-        // num_images = header[1];
-
-
         for (unsigned j = 0; j < num_images; j++)
         {
             uint8_t element[1];
-
             if (fread(element, sizeof(element), 1, f))
             {
-                dataArray->at(j)->setLabel(element[0]);
+                dataArray->at(j)->setLabel(element[0]); // устанавливаем метку соответствующей картинке
 
             }
             else
@@ -196,42 +183,28 @@ void DataHandler::readLabelData(std::string path)
         exit(1);
     }
 }
+// разбиение данных
 void DataHandler::splitData()
 {
-    std::unordered_set<int> used_indexes;
+    std::unordered_set<int> used_indexes; 
     int train_size = dataArray->size() * TRAIN_SET_PERCENT;
     int test_size = dataArray->size() * TEST_SET_PERCENT;
     int valid_size = dataArray->size() * VALIDATATION_PERCENT;
 
-    std::random_shuffle(dataArray->begin(), dataArray->end());
+    std::random_shuffle(dataArray->begin(), dataArray->end()); // перемешиваем данные
 
     // Training data
     int count = 0;
     int index = 0;
     while (count < train_size)
     {
-        // int rand_index = (rand() + rand()) % dataArray->size(); // [0; data_array->size()-1]
-        // if (used_indexes.find(rand_index) == used_indexes.end())
-        // {
-        //     trainingData->push_back(dataArray->at(rand_index));
-        //     used_indexes.insert(rand_index);
-        //     count++;
-        // }
         trainingData->push_back(dataArray->at(index++));
         count++;
     }
-
     // Test Data
     count = 0;
     while (count < test_size)
     {
-        // int rand_index = (rand() + rand()) % data_array->size(); // [0; data_array->size()-1]
-        // if (used_indexes.find(rand_index) == used_indexes.end())
-        // {
-        //     test_data->push_back(data_array->at(rand_index));
-        //     used_indexes.insert(rand_index);
-        //     count++;
-        // }
         testData->push_back(dataArray->at(index++));
         count++;
     }
@@ -240,13 +213,6 @@ void DataHandler::splitData()
     count = 0;
     while (count < valid_size)
     {
-        // int rand_index = (rand() + rand()) % data_array->size(); // [0; data_array->size()-1]
-        // if (used_indexes.find(rand_index) == used_indexes.end())
-        // {
-        //     validation_data->push_back(data_array->at(rand_index));
-        //     used_indexes.insert(rand_index);
-        //     count++;
-        // }
         validationData->push_back(dataArray->at(index++));
         count++;
     }
@@ -254,6 +220,7 @@ void DataHandler::splitData()
     printf("Test Data Size: %lu.\n", testData->size());
     printf("Validation Data Size: %lu.\n", validationData->size());
 }
+// подсчет количества классов для MNIST
 void DataHandler::countClasses()
 {
     int count = 0;
@@ -262,35 +229,39 @@ void DataHandler::countClasses()
         if (classFromInt.find(dataArray->at(i)->getLabel()) == classFromInt.end())
         {
             classFromInt[dataArray->at(i)->getLabel()] = count;
-            dataArray->at(i)->setEnumeratedLabel(count);
+            // dataArray->at(i)->setEnumeratedLabel(count); // можно убрать
             count++;
         }
-        // else
-        // {
-        //     dataArray->at(i)->setEnumeratedLabel(classFromInt[dataArray->at(i)->getLabel()]);
-        // }
+        else
+        {
+            // dataArray->at(i)->setEnumeratedLabel(classFromInt[dataArray->at(i)->getLabel()]);
+        }
     }
     classCounts = count;
-    for(Data *data : *dataArray)  
+    for(Data *data : *dataArray)
     {
         data->setClassVector(classCounts);
     }
     printf("Succesfully Extracted %d Unique Classes.\n", classCounts);
 }
 
+// convert to little endian
 uint32_t DataHandler::format(const unsigned char *bytes)
 {
-    return (uint32_t)((bytes[0] << 24) |
-                      bytes[1] << 16 |
-                      bytes[2] << 8 |
-                      bytes[3]);
+    // в 32 битах 4 байта. big endiand: A3, A2, A1, A0 -> little endian: A0, A1, A2, A3
+    return (uint32_t)((bytes[0] << 24) | // A3->A0
+                      bytes[1] << 16 | // A2->A1
+                      bytes[2] << 8 | // A1->A2
+                      bytes[3]); // A0 -> A3
 }
 
-
+// нормализация по методу минимакс(для фоточек самое то): преобразуем исходный набор в отрезок [0,1]
+// можно реализовать Z-нормализацию
+// X_n = (X_i - X_min) / (X_max - X_min)
 void DataHandler::normalize()
 {
     std::vector<double> mins, maxs;
-
+    // инициализируем векторы мин и макс на первом экземпляре
     Data *d = dataArray->at(0);
     for(auto val : *d->getFeatureVector())
     {
@@ -323,7 +294,7 @@ void DataHandler::normalize()
 
     }
 }
-
+// ну тут все понятно, просто геттеры
 int DataHandler::getDataArraySize()
 {
     return dataArray->size();
@@ -346,7 +317,6 @@ int DataHandler::getClassCounts()
     return classCounts;
 }
 
-
 std::vector<Data *> *DataHandler::getTrainingData()
 {
     return trainingData;
@@ -363,6 +333,10 @@ std::vector<Data *> *DataHandler::getValidationData()
 std::map<uint8_t, int> DataHandler::getClassMap()
 {
     return classFromInt;
+}
+std::map<std::string, int> DataHandler::getClassFromString()
+{
+    return classFromString;
 }
 
 void DataHandler::print()

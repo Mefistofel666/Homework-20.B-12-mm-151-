@@ -3,7 +3,7 @@
 
 #include <vector>
 #include "data.h"
-
+// штука которая часто встречается, поэтому от нее удобно наследоваться
 class CommonData
 {
 protected:

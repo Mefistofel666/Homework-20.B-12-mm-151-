@@ -1,5 +1,6 @@
 #include "bayes.h"
 #include "data_handler.h"
+
 void NaiveBayes::summarizingDataset()
 {
     int size = trainingData->size();
@@ -185,6 +186,7 @@ void printSumByClass(std::map<int, std::vector<summary>> m)
 int main()
 {
     DataHandler *data_handler = new DataHandler();
+
     data_handler->readCsv("../iris.txt", ",");
     data_handler->splitData();
     NaiveBayes *bayes = new NaiveBayes();
@@ -202,15 +204,15 @@ int main()
     // std::cout << "prediction -> " << res << " Expected -> 0\n";
     // printProb(bayes->getProb());
     
-    
     bayes->test();
 
     std::cout << "\n";
-    std::cout << "[Setosa] -> 0; \n[Versicolor] -> 1; \n[Virginica] -> 2\n";
+    std:: map<std::string, int> classMap = data_handler->getClassFromString();
+    std:: cout << "[Setosa] -> "<< classMap["Iris-etosa"] << "\n";
+    std:: cout << "[Virginica] -> "<< classMap["Iris-virginica"] << "\n";
+    std:: cout << "[Versicolor] -> "<< classMap["Iris-versicolor"] << "\n";
 
-
-
-    // Test Gaussian
+    // Test Gaussssssssssssss
     // std::cout << bayes->calcProb(1.0,1.0,1.0);
 
 
@@ -224,9 +226,6 @@ int main()
     //         std::cout << bayes->getSummariesByClass()[i][j];
     //     }
     // }
-
-
-
 
     // Test summarizing
 
