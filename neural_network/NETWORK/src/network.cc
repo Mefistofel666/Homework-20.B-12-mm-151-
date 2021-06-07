@@ -3,6 +3,8 @@
 #include "data_handler.h"
 #include <numeric> // double MAX
 #include <algorithm> // sqrt
+#include <chrono>
+#include "result.h"
 
 //  Конструктор:
 // Инициализируются слои заданных размеров
@@ -19,7 +21,7 @@ Network::Network(std::vector<int> neuronsAtLayer, int inputSize, int numClasses,
     this->learningRate = learningRate;
 }
 
-// Надо пофиксить
+// Надо пофиксить наверное
 Network::~Network(){}
 
 //  просто линейная часть преобразования
@@ -187,7 +189,72 @@ void Network::validate()
         int index = predict(data);
         if(data->getClassVector().at(index) == 1) numCorrect++;
     }
-   printf("Validation Performance: %.4f\n", numCorrect / count);
+    double performance = numCorrect / count;
+    printf("Validation Performance: %.4f\n", performance);
+}
+
+
+// гипотеза: при достаточном количестве эпох и скрытых нейронов все будет ок даже на небольшом обучающем датасете
+std::vector<result> getRes(DataHandler *dh)
+{
+    std::vector<result> *res = new std::vector<result>();
+
+    std::vector<double> percents; // типа возможные размеры тренировочной выборки
+    for(double i = 1.0; i < 8; i += 2)
+    {
+        percents.push_back(i / 10.0);
+    }
+    for(int i = 0; i <percents.size(); i++) //percents.size()
+    {
+        double best_performance = 0.0;
+        int best_j = 0;
+        auto begin = std::chrono::steady_clock::now();// засекаем время
+
+        dh->splitData(percents[i], 0.3, 0.0); // (double)1/200 for mnist =  300; 0.3 for iris = 45
+        int trainSize = percents[i] * dh->getDataArraySize();
+        double time = 0;
+        double performance = 0;
+        for(int j = 10; j < 200; j+=10)
+        {
+            std::vector<int> hiddenLayers = {j}; 
+            Network *net = new Network(
+                hiddenLayers, 
+                dh->getTrainingData()->at(0)->getNormalizedFeatureVector()->size(), 
+                dh->getClassCounts(),
+                0.25);
+            net->setTrainingData(dh->getTrainingData());
+            net->setTestData(dh->getTestData());
+            net->setValidationData(dh->getValidationData());
+            net->train(25); // n эпох обучения 25 было хорошо, 15 тоже самое почти 
+            performance = net->test();
+            if (performance > best_performance)
+            {
+                best_j = j;
+                best_performance = performance;
+            }
+        }
+        // std::vector<int> hiddenLayers = {25}; 
+        //     Network *net = new Network(
+        //         hiddenLayers, 
+        //         dh->getTrainingData()->at(0)->getNormalizedFeatureVector()->size(), 
+        //         dh->getClassCounts(),
+        //         0.25);
+        // net->setTrainingData(dh->getTrainingData());
+        // net->setTestData(dh->getTestData());
+        // net->setValidationData(dh->getValidationData());
+        // net->train(15); // n эпох обучения; 25 было хорошо
+        // performance = net->test();
+        // best_performance = performance;
+
+        // отсекаем время
+        auto end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsed_seconds = end - begin;
+        time = elapsed_seconds.count();
+        result r(trainSize, time, best_performance);
+        res->push_back(r);
+        printf ("best_j = %i\n", best_j);
+    }
+    return *res;
 }
 
 
@@ -200,24 +267,50 @@ int main()
     dataHandler->readLabelData("../train-labels-idx1-ubyte"); // читаем классы картинок
     dataHandler->countClasses(); // подсчитываем количество классов(пригодится для передачи как параметр нейросети)
 #else 
-    dataHandler->readCsv("...iris.data", ","); // если MNIST не был определен, то работает с набором данных ирисов Фишера
+    dataHandler->readCsv("../iris.txt", ","); // если MNIST не был определен, то работает с набором данных ирисов Фишера
 #endif
-    dataHandler->splitData(); // разбиваем данные (тут хорошо бы как параметры принимать процентики)
-    // задаем архитектуру сети (каждое значение этого вектора определяет количество нейронов в i-ом слое)
-    std::vector<int> hiddenLayers = {15}; 
-    // передаем параметры в сеть, обучаем ее и выводим результат
-    Network *net = new Network(
-        hiddenLayers, 
-        dataHandler->getTrainingData()->at(0)->getNormalizedFeatureVector()->size(), 
-        dataHandler->getClassCounts(),
-        0.3);
-    net->setTrainingData(dataHandler->getTrainingData());
-    net->setTestData(dataHandler->getTestData());
-    net->setValidationData(dataHandler->getValidationData());
-    net->train(15); // 15 эпох обучения
-    net->validate();
-    printf("Test Performance: %.3f\n", net->test());
+
+    // для тестирования на разных объемах входных данных
+    std::vector<result> results = getRes(dataHandler);
+    std::ofstream to_csv;
+    to_csv.open("network_iris.csv");
+    to_csv << "TrainSize,Time,Performance\n";
+    for(int i = 0; i < results.size(); i++)
+    {
+        int size = results[i].getTrainSize();
+        double time = results[i].getTime();
+        double perf = results[i].getPerformance();
+        to_csv << size << "," << time << "," << perf << "\n";
+    }
+    to_csv.close();
+
+
+
+
+
+
+
+
+    // // train | test | validate
+    // dataHandler->splitData(0.1, 0.3, 0.1); // разбиваем данные (тут хорошо бы как параметры принимать процентики)
+    // // задаем архитектуру сети (каждое значение этого вектора определяет количество нейронов в i-ом слое)
+    // std::vector<int> hiddenLayers = {150}; 
+    // // передаем параметры в сеть, обучаем ее и выводим результат
+    // Network *net = new Network(
+    //     hiddenLayers, 
+    //     dataHandler->getTrainingData()->at(0)->getNormalizedFeatureVector()->size(), 
+    //     dataHandler->getClassCounts(),
+    //     0.25);
+    // net->setTrainingData(dataHandler->getTrainingData());
+    // net->setTestData(dataHandler->getTestData());
+    // net->setValidationData(dataHandler->getValidationData());
+    // net->train(25); // 15 эпох обучения
+    // net->validate();
+    // printf("Test Performance: %.3f\n", net->test());
 
  // the best parameters: hiddenLayers = 15; learningRate = 0.3; epochs = 15;
  // по-хорошему надо скрытый слой делать из 100+ нейронов, но компуктеру больно тяжко
 }
+
+
+// 100 = neurons, 25 = epochs, 0.25 = lr - текущий рез-тат в файле mnist

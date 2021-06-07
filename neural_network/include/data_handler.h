@@ -27,9 +27,9 @@ class DataHandler
 public:
     // хорошо бы принимать эти параметры при разбиении dataArray, но пока что лень
     //  указан процент от размера исходного датасета
-    const double TRAIN_SET_PERCENT = 0.70;
-    const double TEST_SET_PERCENT = 0.15;
-    const double VALIDATATION_PERCENT = 0.15;
+    double trainSetPercent = 0.70;
+    double testSetPercent = 0.20;
+    double validationPercent = 0.1;
 
 
     DataHandler();
@@ -41,7 +41,7 @@ public:
     void readLabelData(std::string path);
 
     // Обработка данных
-    void splitData(); // разбиение исходных данных
+    void splitData(double trainSetPercent, double testSetPercent, double validationPercent); // разбиение исходных данных
     void countClasses(); // подсчет уникальных классов
     void normalize(); // нормализация (минимакс)
     void print();

@@ -1,5 +1,7 @@
 #include "bayes.h"
 #include "data_handler.h"
+#include "result.h"
+#include <chrono>
 
 void NaiveBayes::summarizingDataset()
 {
@@ -53,17 +55,23 @@ void NaiveBayes::calculateClassProb(std::vector<double> row)
     {
         totalRows += summariesByClass[i][0].count;
     }
+
     for(int i = 0; i < summariesByClass.size(); i++)
     {
-        prob[i] = (double)summariesByClass[i][0].count / totalRows;
+        prob[i] = (double)(summariesByClass[i][0].count + 1) / (totalRows + 10);
         for(int j = 0; j < summariesByClass[i].size(); j++)
         {
             double mean = summariesByClass[i][j].mean;
             double sd = summariesByClass[i][j].sd;
+            if(sd == 0) sd = 1;
             int count  = summariesByClass[i][j].count;
+            // std::cout << "mean = " << mean << "; sd = " << sd << "\n";
 
             prob[i] *= calcProb(row[j], mean, sd);
+            // std:: cout <<  "calc prob = " << calcProb(row[j], mean, sd) << "\n";
         }
+        // std::cout << "prob[i] = " << prob[i] << "\n";
+
     }
 }
 void printProb(std::map<int, double> prob)
@@ -101,10 +109,11 @@ int NaiveBayes::predict(std::vector<double> row)
     int prediction = bestLabel(row);
     return prediction;
 }
-void NaiveBayes::test()
+double NaiveBayes::test()
 {
     int count = 0;
     int index = 0;
+    double performance = 0.0;
     for(Data *d : *testData)
     {
         index++;
@@ -116,9 +125,10 @@ void NaiveBayes::test()
             
         }
         std::cout << "prediction: " << predictedLabel << " -> Expected: " << expectedLabel << "\n";
-        std::cout << "Current Accuracy: " << 100*(double)count/(double)(index) << "%.\n";
-
+        performance = 100*(double)count/(double)(index);
+        std::cout << "Current Accuracy: " << performance << "%.\n";
     }
+    return performance;
 }
 
 
@@ -182,35 +192,89 @@ void printSumByClass(std::map<int, std::vector<summary>> m)
     }
 }
 
+std::vector<result> getRes(DataHandler *dh)
+{
+    std::vector<result> *res = new std::vector<result>();
+    std::vector<double> percents; // типа возможные размеры тренировочной выборки
+    for(double i = 1.0; i < 8; i += 2)
+    {
+        percents.push_back(i / 10.0);
+    }
+    for(int i = 0; i < percents.size(); i++)
+    {
+        dh->splitData(percents[i], 0.3, 0); // (double)1/600 for mnist =  100; 0.3 for iris = 45
+        int trainSize = percents[i] * dh->getDataArraySize();
+        double time = 0;
+        auto begin = std::chrono::steady_clock::now();
+        // засекаем время
+        NaiveBayes *bayes = new NaiveBayes();
+        bayes->setTrainingData(dh->getTrainingData());
+        bayes->setTestData(dh->getTestData());
+        bayes->setValidationData(dh->getValidationData());
+        bayes->separateByClass(); 
+        bayes->summarizingDataset(); 
+        bayes->summarizingByClass();
+        double performance = bayes->test();
+        printProb(bayes->getProb());
+        // отсекаем время
+        auto end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsed_seconds = end - begin;
+        time = elapsed_seconds.count();
+        result r(trainSize, time, performance);
+        res->push_back(r);
+    }
+    return *res;
+}
+
+
 
 int main()
 {
     DataHandler *data_handler = new DataHandler();
+    #ifdef MNIST
+        data_handler->readInputData("../train-images-idx3-ubyte");
+        data_handler->readLabelData("../train-labels-idx1-ubyte");
+        data_handler->countClasses();
+    #else
+        data_handler->readCsv("../iris.txt", ",");
+    #endif
+    // data_handler->splitData();
+    // NaiveBayes *bayes = new NaiveBayes();
 
-    data_handler->readCsv("../iris.txt", ",");
-    data_handler->splitData();
-    NaiveBayes *bayes = new NaiveBayes();
+    // bayes->setTrainingData(data_handler->getTrainingData());
+    // bayes->setTestData(data_handler->getTestData());
+    // bayes->setValidationData(data_handler->getValidationData());
 
-    bayes->setTrainingData(data_handler->getTrainingData());
-    bayes->setTestData(data_handler->getTestData());
-    bayes->setValidationData(data_handler->getValidationData());
-
-    bayes->separateByClass(); 
-    bayes->summarizingDataset(); 
-    bayes->summarizingByClass(); 
+    // bayes->separateByClass(); 
+    // bayes->summarizingDataset(); 
+    // bayes->summarizingByClass(); 
     // printSumByClass(bayes->getSummariesByClass());
     // std::vector<double> test {5.4,3.9,1.7,.4};
     // int res = bayes->predict(test);
     // std::cout << "prediction -> " << res << " Expected -> 0\n";
     // printProb(bayes->getProb());
     
-    bayes->test();
+    // bayes->test();
 
-    std::cout << "\n";
-    std:: map<std::string, int> classMap = data_handler->getClassFromString();
-    std:: cout << "[Setosa] -> "<< classMap["Iris-etosa"] << "\n";
-    std:: cout << "[Virginica] -> "<< classMap["Iris-virginica"] << "\n";
-    std:: cout << "[Versicolor] -> "<< classMap["Iris-versicolor"] << "\n";
+    std::vector<result> results = getRes(data_handler);
+
+    std::ofstream to_csv;
+    to_csv.open("bayes_iris.csv");
+    to_csv << "TrainSize,Time, Performance\n";
+    for(int i = 0; i < results.size(); i++)
+    {
+        int size = results[i].getTrainSize();
+        double time = results[i].getTime();
+        double perf = results[i].getPerformance();
+        to_csv << size << "," << time << "," << perf << "\n";
+    }
+    to_csv.close();
+
+    // std::cout << "\n";
+    // std:: map<std::string, int> classMap = data_handler->getClassFromString();
+    // std:: cout << "[Setosa] -> "<< classMap["Iris-etosa"] << "\n";
+    // std:: cout << "[Virginica] -> "<< classMap["Iris-virginica"] << "\n";
+    // std:: cout << "[Versicolor] -> "<< classMap["Iris-versicolor"] << "\n";
 
     // Test Gaussssssssssssss
     // std::cout << bayes->calcProb(1.0,1.0,1.0);

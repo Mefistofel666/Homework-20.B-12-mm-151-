@@ -4,6 +4,8 @@
 #include <map>
 #include "stdint.h"
 #include "data_handler.h"
+#include <chrono>
+#include <fstream>
 
 KNN::KNN(int val)
 {
@@ -152,7 +154,7 @@ double KNN::validatePerformance()
         findKnearest(query_point);
         int prediction = findMostFrequentClass();
         data_index++;
-        printf("%d -> %d \n", prediction, query_point->getLabel());
+        // printf("%d -> %d \n", prediction, query_point->getLabel());
         if(prediction == query_point->getLabel())
         {
             count++;
@@ -160,7 +162,7 @@ double KNN::validatePerformance()
         // printf("Current Performance = %.3f %%\n",((double)count*100.0)/((double)data_index) );
     }
     current_performance =  ((double)count*100.0)/((double)validationData->size());
-    printf("Valifation Performance for K =%d : %.3f %%\n", k,current_performance);
+    printf("Validation Performance for K = %d : %.3f %%\n", k,current_performance);
     return current_performance;
 }
 double KNN::testPerformance()
@@ -181,10 +183,58 @@ double KNN::testPerformance()
     return current_performance;
 }
 
+std::vector<result> getRes(int k, DataHandler *dh)
+{
+    std::vector<result> *res = new std::vector<result>();
+    std::vector<double> percents; // типа возможные размеры тренировочной выборки
+    for(double i = 1.0; i < 8; i+=2)
+    {
+        percents.push_back(i / 10.0);
+    }
+    for(int i = 0; i < percents.size(); i++)
+    {
+        dh->splitData(percents[i], 0.0, 0.3); // (double)1/600 for mnist =  100; 0.3 for iris = 45
+        int trainSize = percents[i] * dh->getDataArraySize();
+        double time = 0;
+        auto begin = std::chrono::steady_clock::now();
+        // засекаем время
+        KNN *nearest = new KNN();
+        nearest->setK(1);
+        nearest->setTrainingData(dh->getTrainingData());
+        nearest->setTestData(dh->getTestData());
+        nearest->setValidationData(dh->getValidationData());
+        double performance = 0;
+        double best_performance = 0;
+        int best_k = 1;
+        for(int i = 1; i <= 7; i++) 
+        {
+            if(i == 1)
+            {
+                performance = nearest->validatePerformance();
+                best_performance = performance;
+            
+            } else
+            {
+                nearest->setK(i);
+                performance = nearest->validatePerformance();
+                if(performance > best_performance)
+                {
+                    best_performance = performance;
+                    best_k = i;
+                }
+            }
+        }
+        // отсекаем время
+        auto end = std::chrono::steady_clock::now();
+        std::chrono::duration<double> elapsed_seconds = end - begin;
+        time = elapsed_seconds.count();
+        result r(trainSize, time, best_performance);
+        res->push_back(r);
+    }
+    return *res;
+}
 int main()
 {
-
-    // написать для ирисов Фишера штучку
     DataHandler *dh = new DataHandler();
     #ifdef MNIST
         dh->readInputData("../train-images-idx3-ubyte");
@@ -193,46 +243,55 @@ int main()
     #else
         dh->readCsv("../iris.txt", ",");
     #endif
-
-    dh->splitData();
-    
-    KNN *nearest = new KNN();
-    nearest->setK(3);
-    nearest->setTrainingData(dh->getTrainingData());
-    nearest->setTestData(dh->getTestData());
-    nearest->setValidationData(dh->getValidationData());
-    double performance = 0;
-    double best_performance = 0;
-    int best_k = 1;
-    std::vector<int> bests;
-    for(int i = 1; i <= 80; i++) 
+    std::vector<result>  results = getRes(2, dh);
+    for(int i = 0; i < results.size(); i++)
     {
-        if(i == 1)
-        {
-            performance = nearest->validatePerformance();
-            best_performance = performance;
-        } else
-        {
-            nearest->setK(i);
-            performance = nearest->validatePerformance();
-            if(performance >= best_performance)
-            {
-                best_performance = performance;
-                bests.push_back(i);
-                best_k = i;
-            }
-
-
-        }
+        int size = results[i].getTrainSize();
+        double time = results[i].getTime();
+        double perf = results[i].getPerformance();
+        printf("iter %i:\n size = %i; time = %f; performance = %f.\n", i + 1, size, time, perf);
     }
-    for(int i = 0; i < bests.size(); i++)
+    std::ofstream to_csv;
+    to_csv.open("knn_table_iris.csv");
+    to_csv << "TrainSize,Time, Performance\n";
+    for(int i = 0; i < results.size(); i++)
     {
-        nearest->setK(bests[i]);
-        printf("Best K = %i\n", bests[i]);
-        nearest->testPerformance();
+        int size = results[i].getTrainSize();
+        double time = results[i].getTime();
+        double perf = results[i].getPerformance();
+        to_csv << size << "," << time << "," << perf << "\n";
     }
-    nearest->setK(4);
-    printf("Best K = %i\n", 4);
-    nearest->testPerformance();
+    to_csv.close();
+    // dh->splitData(0.7, 0.2, 0.1);
+    // KNN *nearest = new KNN();
+    // nearest->setK(3);
+    // nearest->setTrainingData(dh->getTrainingData());
+    // nearest->setTestData(dh->getTestData());
+    // nearest->setValidationData(dh->getValidationData());
+    // double performance = 0;
+    // double best_performance = 0;
+    // int best_k = 1;
+    // for(int i = 1; i <= 30; i++) 
+    // {
+    //     if(i == 1)
+    //     {
+    //         performance = nearest->validatePerformance();
+    //         best_performance = performance;
+    //     } else
+    //     {
+    //         nearest->setK(i);
+    //         performance = nearest->validatePerformance();
+    //         if(performance > best_performance)
+    //         {
+    //             best_performance = performance;
+    //             best_k = i;
+    //         }
+
+
+    //     }
+    // }
+    // nearest->setK(best_k);
+    // printf("Best K = %i\n", best_k);
+    // nearest->testPerformance();
     // k = 3 лучший параметр для MNIST
 }

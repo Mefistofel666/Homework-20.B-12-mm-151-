@@ -1,6 +1,6 @@
 CC=g++
 SRC:=$(MNIST_ML_ROOT)/NETWORK/src
-CFLAGS:=-std=c++11 -g -DMNIST
+CFLAGS:= -std=c++11 -g 
 INCLUDE_DIR:=$(MNIST_ML_ROOT)/NETWORK/include/
 
 all:main	

@@ -7,8 +7,8 @@ LIB_DATA := libdata.so
 
 all: $(LIB_DATA)
 
-$(LIB_DATA) : libdir objdir obj/data_handler.o obj/data.o obj/common.o
-	$(CC) $(CFLAGS) -o $(MNIST_ML_ROOT)/lib/$(LIB_DATA) obj/data.o obj/data_handler.o obj/common.o
+$(LIB_DATA) : libdir objdir obj/data_handler.o obj/data.o obj/common.o obj/result.o
+	$(CC) $(CFLAGS) -o $(MNIST_ML_ROOT)/lib/$(LIB_DATA) obj/data.o obj/data_handler.o obj/common.o obj/result.o
 	rm -r $(MNIST_ML_ROOT)/obj
 
 libdir : 
@@ -24,6 +24,9 @@ obj/data.o : $(SRC)/data.cc
 
 obj/common.o : $(SRC)/common.cc
 	$(CC) -fPIC $(CFLAGS) -o obj/common.o -I$(INCLUDE_DIR) -c $(SRC)/common.cc
+
+obj/result.o : $(SRC)/result.cc
+	$(CC) -fPIC $(CFLAGS) -o obj/result.o -I$(INCLUDE_DIR) -c $(SRC)/result.cc
 
 clean:
 	rm -r $(MNIST_ML_ROOT)/lib

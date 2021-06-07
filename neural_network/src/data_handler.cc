@@ -184,12 +184,15 @@ void DataHandler::readLabelData(std::string path)
     }
 }
 // разбиение данных
-void DataHandler::splitData()
+void DataHandler::splitData(double trainSetPercent, double testSetPercent, double validationPercent)
 {
     std::unordered_set<int> used_indexes; 
-    int train_size = dataArray->size() * TRAIN_SET_PERCENT;
-    int test_size = dataArray->size() * TEST_SET_PERCENT;
-    int valid_size = dataArray->size() * VALIDATATION_PERCENT;
+    trainingData = new std::vector<Data *>;
+    testData = new std::vector<Data *>;
+    validationData = new std::vector<Data *>;
+    int train_size = dataArray->size() * trainSetPercent;
+    int test_size = dataArray->size() * testSetPercent;
+    int valid_size = dataArray->size() * validationPercent;
 
     std::random_shuffle(dataArray->begin(), dataArray->end()); // перемешиваем данные
 

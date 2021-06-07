@@ -9,6 +9,7 @@
 #include <math.h>
 #include <map>
 #include "data_handler.h"
+#include "result.h"
 typedef struct cluster 
 {
   std::vector<double> *centroid; // центр масс класстера  = ср. арифметическое

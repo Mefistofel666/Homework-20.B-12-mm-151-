@@ -67,7 +67,7 @@ public:
     void calculateClassProb(std::vector<double> row);
     int bestLabel(std::vector<double> row);
     int predict(std::vector<double> row);
-    void test();
+    double test();
 
 
 
